@@ -5,35 +5,27 @@
 #include <stdlib.h>
 #include <time.h>
 
-void clearScreen();
-void getConfirmation();
+void confirmar(void);
 void salvarHistorico(int refeicao, int glicemia, int carboidratos, int insulina);
-void menu();
-void contarCarboidratos();
-void visualizarHistorico();
+void menu(void);
+void contarCarboidratos(void);
+void visualizarHistorico(void);
 int calcularInsulina(float proporcao, float glicemiaAtual, float carboidratos);
 char *prompt(int code);
 
+int main(void) {
+    menu();
+    return 0;
+}
+
+void confirmar() {
 #ifdef _WIN32
 #include <conio.h>
-
-void clearScreen() {
-    system("cls");
-}
-
-void getConfirmation() {
     getch();
-}
-
 #else
-void clearScreen() {
-    system("clear");
-}
-
-void getConfirmation() {
     system("read a");
-}
 #endif
+}
 
 FILE *historico = NULL;
 char nomeArquivo[] = "historico_insulina.txt";
@@ -76,14 +68,16 @@ void salvarHistorico(int refeicao, int glicemia, int carboidratos, int insulina)
     strftime(hora, sizeof(hora), "%H:%M", horario);
 
     char buffer[256];
-    sprintf(buffer,
-            "[%s - %s] - R: %s | G: %d mg/L | C: %d g | I: %d UI\n",
-            data,
-            hora,
-            nomeRefeicao,
-            glicemia,
-            carboidratos,
-            insulina);
+    if (carboidratos == -1) {
+        sprintf(buffer, "[%s - %s] - R: %s | G: %d mg/L | C: - | I: %d UI\n", data, hora, nomeRefeicao, glicemia, insulina);
+
+    }
+
+    else {
+        sprintf(
+            buffer, "[%s - %s] - R: %s | G: %d mg/L | C: %d g | I: %d UI\n", data, hora, nomeRefeicao, glicemia, carboidratos, insulina);
+    }
+
     fprintf(historico, "%s", buffer);
     fclose(historico);
 }
@@ -92,7 +86,7 @@ void menu() {
     int opcao = 0;
 
     while (1) {
-        clearScreen();
+        system("clear");
         printf("CONTAGEM DE CARBOIDRATOS\n");
         printf("\n1 - Calcular Insulina\n");
         printf("2 - Visualizar Histórico\n");
@@ -115,7 +109,7 @@ void menu() {
 
         default:
             printf("\n%s", prompt(1));
-            getConfirmation();
+            confirmar();
             break;
         }
     }
@@ -126,7 +120,7 @@ void contarCarboidratos() {
     int proporcao = 0;
 
     while (proporcao == 0) {
-        clearScreen();
+        system("clear");
         printf("Escolha uma refeição:\n");
         printf("\n1 - Café da Manhã\n");
         printf("2 - Almoço\n");
@@ -154,7 +148,7 @@ void contarCarboidratos() {
 
         default:
             printf("\n%s", prompt(1));
-            getConfirmation();
+            confirmar();
             break;
         }
     }
@@ -162,50 +156,50 @@ void contarCarboidratos() {
     int glicemiaAtual = 0;
 
     do {
-        clearScreen();
+        system("clear");
         printf("Glicemia (mg/L): ");
         scanf("%d", &glicemiaAtual);
 
         if (glicemiaAtual < 0) {
             printf("\n\n%s", prompt(1));
-            getConfirmation();
+            confirmar();
         }
     } while (glicemiaAtual < 0);
 
     int carboidratos = 0;
 
     do {
-        clearScreen();
+        system("clear");
         printf("Carboidratos (g): ");
         scanf("%d", &carboidratos);
 
-        if (carboidratos < 0) {
+        if (carboidratos < -1) {
             printf("\n%s", prompt(1));
-            getConfirmation();
+            confirmar();
         }
-    } while (carboidratos < 0);
+    } while (carboidratos < -1);
 
     int insulina = calcularInsulina(proporcao, glicemiaAtual, carboidratos);
 
     salvarHistorico(refeicao, glicemiaAtual, carboidratos, insulina);
 
-    clearScreen();
+    system("clear");
     printf("RESUMO\n");
     printf("\nGlicemia: %d mg/L\n", glicemiaAtual);
     printf("Carboidratos: %d g\n", carboidratos);
     printf("\nInsulina: %d UI\n", insulina);
 
     printf("\n%s", prompt(0));
-    getConfirmation();
+    confirmar();
 }
 
 void visualizarHistorico() {
     historico = fopen(nomeArquivo, "r");
 
     if (historico == NULL) {
-        clearScreen();
+        system("clear");
         printf("%s", prompt(2));
-        getConfirmation();
+        confirmar();
         return;
     }
 
@@ -215,13 +209,13 @@ void visualizarHistorico() {
 
     if (tamanho == 0) {
         fclose(historico);
-        clearScreen();
+        system("clear");
         printf("%s", prompt(2));
-        getConfirmation();
+        confirmar();
         return;
     }
 
-    clearScreen();
+    system("clear");
     char buffer[256];
     while (fgets(buffer, sizeof(buffer), historico) != NULL) {
         printf("%s", buffer);
@@ -229,7 +223,7 @@ void visualizarHistorico() {
 
     fclose(historico);
     printf("\n%s", prompt(0));
-    getConfirmation();
+    confirmar();
 }
 
 int calcularInsulina(float proporcao, float glicemiaAtual, float carboidratos) {
@@ -254,9 +248,4 @@ char *prompt(int code) {
     case 2:
         return "Histórico vazio!\n";
     }
-}
-
-int main() {
-    menu();
-    return 0;
 }
